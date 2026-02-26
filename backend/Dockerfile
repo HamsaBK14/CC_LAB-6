@@ -1,6 +1,4 @@
-FROM alpine:latest
-
-RUN apk add --no-cache g++
+FROM gcc:latest
 
 WORKDIR /app
 
