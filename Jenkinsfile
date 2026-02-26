@@ -18,15 +18,24 @@ pipeline {
             }
         }
 
+        stage('Create Network') {
+            steps {
+                sh '''
+                docker network rm lab6-network || true
+                docker network create lab6-network
+                '''
+            }
+        }
+
         stage('Deploy Backend Containers') {
             steps {
                 sh '''
                 docker rm -f backend1 backend2 || true
 
-                docker run -d --name backend1 backend-app
-                docker run -d --name backend2 backend-app
+                docker run -d --name backend1 --network lab6-network backend-app
+                docker run -d --name backend2 --network lab6-network backend-app
 
-                sleep 3
+                sleep 5
                 '''
             }
         }
@@ -36,9 +45,12 @@ pipeline {
                 sh '''
                 docker rm -f nginx-lb || true
 
-                docker run -d -p 80:80 --name nginx-lb nginx
+                docker run -d -p 80:80 \
+                --name nginx-lb \
+                --network lab6-network \
+                nginx
 
-                sleep 2
+                sleep 3
 
                 docker cp nginx/default.conf nginx-lb:/etc/nginx/conf.d/default.conf
 
@@ -56,11 +68,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline executed successfully'
+            echo 'Pipeline SUCCESS: Load Balancer Working'
         }
-
         failure {
-            echo 'Pipeline failed'
+            echo 'Pipeline FAILED'
         }
     }
 }
